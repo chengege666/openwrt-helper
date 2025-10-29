@@ -1,6 +1,6 @@
 #!/bin/bash
 # OpenWrt系统管理脚本
-# 使用方法: bash <(curl -s https://raw.githubusercontent.com/用户名/仓库名/main/openwrt-helper.sh)
+# 使用方法: bash <(curl -s https://raw.githubusercontent.com/chengege666/openwrt-helper/main/openwrt-helper.sh)
 
 set -e
 
@@ -71,6 +71,8 @@ system_info() {
     echo
     echo -e "${CYAN}=== 运行时间 ===${NC}"
     uptime
+    echo -e "${CYAN}=== CPU信息 ===${NC}"
+    grep -E "processor|model name|cpu MHz" /proc/cpuinfo 2>/dev/null | head -6
     echo
     echo -e "${CYAN}=== 内存使用 ===${NC}"
     free -h 2>/dev/null || cat /proc/meminfo | head -3
@@ -200,7 +202,7 @@ speed_test() {
     ping -c 3 8.8.8.8
     echo
     echo -e "${CYAN}=== 下载测试 ===${NC}"
-    if command -v wget >/dev/null 2>&1; then
+    if command -v wget >/dev/null 2>&1; 键，然后
         time wget -O /dev/null http://cachefly.cachefly.net/10mb.test 2>&1 | grep -i "speed"
     else
         warn "wget不可用，跳过下载测试"
