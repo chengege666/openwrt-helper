@@ -412,7 +412,7 @@ main() {
         echo -n -e "${WHITE}请选择操作 [0-14]: ${NC}"
         read choice
         
-        case $choice in
+        case $choice 在
             1) system_info ;;
             2) network_check ;;
             3) wireless_management ;;
