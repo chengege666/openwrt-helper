@@ -1,6 +1,6 @@
 #!/bin/bash
 # OpenWrt一键管理脚本
-# 使用方法: bash <(curl -L -s https://raw.githubusercontent.com/用户名/仓库名/main/openwrt-helper.sh)
+# 使用方法: bash <(curl -L -s https://raw.githubusercontent.com/chengege666/openwrt-helper/main/openwrt-helper.sh)
 
 set -e
 
