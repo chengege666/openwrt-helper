@@ -23,8 +23,9 @@ OpenWrt Helper
 推荐安装命令（使用进程替换）
 
 这种方法通常更加优雅，且避免将脚本内容直接写入历史记录。
+```bash
 bash <(curl -L -s https://raw.githubusercontent.com/你的用户名/openwrt-helper/main/openwrt-helper.sh)
-
+```
 
 其他安装方式
 
