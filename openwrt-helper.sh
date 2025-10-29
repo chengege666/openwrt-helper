@@ -22,13 +22,6 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 # 显示标题
 show_banner() {
     clear
-    echo -e "${BLUE}"
-    echo "   ___                      _    _           _     "
-    echo "  / _ \ _ __   ___ _ __    / \  | |_ _ __ __| |___ "
-    echo " | | | | '_ \ / _ \ '_ \  / _ \ | __| '__/ _' / __|"
-    echo " | |_| | |_) |  __/ | | |/ ___ \| |_| | | (_| \__ \\"
-    echo "  \___/| .__/ \___|_| |_/_/   \_|\__|_|  \__,_|___/"
-    echo "       |_|                                         "
     echo -e "${NC}"
     echo -e "${CYAN}            OpenWrt 系统管理助手 v1.0${NC}"
     echo -e "${CYAN}        GitHub: chengege666/openwrt-helper${NC}"
@@ -412,7 +405,7 @@ main() {
         echo -n -e "${WHITE}请选择操作 [0-14]: ${NC}"
         read choice
         
-        case $choice 在
+        case $choice in
             1) system_info ;;
             2) network_check ;;
             3) wireless_management ;;
