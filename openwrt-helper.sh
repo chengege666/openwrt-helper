@@ -71,6 +71,7 @@ system_info() {
     echo
     echo -e "${CYAN}=== 运行时间 ===${NC}"
     uptime
+    echo
     echo -e "${CYAN}=== CPU信息 ===${NC}"
     grep -E "processor|model name|cpu MHz" /proc/cpuinfo 2>/dev/null | head -6
     echo
@@ -202,7 +203,7 @@ speed_test() {
     ping -c 3 8.8.8.8
     echo
     echo -e "${CYAN}=== 下载测试 ===${NC}"
-    if command -v wget >/dev/null 2>&1; 键，然后
+    if command -v wget >/dev/null 2>&1; then
         time wget -O /dev/null http://cachefly.cachefly.net/10mb.test 2>&1 | grep -i "speed"
     else
         warn "wget不可用，跳过下载测试"
