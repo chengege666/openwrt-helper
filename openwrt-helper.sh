@@ -19,6 +19,23 @@ log() { echo -e "${GREEN}[INFO]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# 显示标题
+show_banner() {
+    clear
+    echo -e "${BLUE}"
+    echo "   ___                      _    _           _     "
+    echo "  / _ \ _ __   ___ _ __    / \  | |_ _ __ __| |___ "
+    echo " | | | | '_ \ / _ \ '_ \  / _ \ | __| '__/ _' / __|"
+    echo " | |_| | |_) |  __/ | | |/ ___ \| |_| | | (_| \__ \\"
+    echo "  \___/| .__/ \___|_| |_/_/   \_|\__|_|  \__,_|___/"
+    echo "       |_|                                         "
+    echo -e "${NC}"
+    echo -e "${CYAN}            OpenWrt 系统管理助手 v1.0${NC}"
+    echo -e "${CYAN}        GitHub: chengege666/openwrt-helper${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+    echo
+}
+
 # 检查系统
 check_system() {
     if [ "$(id -u)" -ne 0 ]; then
@@ -33,7 +50,7 @@ check_system() {
 
 # 显示菜单
 show_menu() {
-    clear
+    show_banner
     echo -e "${WHITE}请选择功能：${NC}"
     echo
     echo -e "  ${CYAN}1. 系统信息总览${NC}"
@@ -52,7 +69,7 @@ show_menu() {
     echo -e "  ${RED}14. 重启系统${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
-    echo -e "${BLUE}================================${NC}"
+    echo -e "${BLUE}=================================================${NC}"
 }
 
 # 系统信息总览
