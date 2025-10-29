@@ -66,20 +66,45 @@ system_info() {
         echo "无法获取OpenWrt版本信息"
     fi
     echo
+    echo -e "${CYAN}=== CPU信息 ===${NC}"
+    # CPU型号信息
+    if [ -f /proc/cpuinfo ]; then
+        echo -e "CPU型号: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | sed 's/^[ \t]*//' 2>/dev/null || grep -m1 'Processor' /proc/cpuinfo | cut -d: -f2 | sed 's/^[ \t]*//' 2>/dev/null || echo '未知')"
+        echo -e "CPU架构: $(uname -m)"
+        echo -e "核心数量: $(grep -c '^processor' /proc/cpuinfo 2>/dev/null || echo '未知')"
+        # CPU频率（如果可用）
+        if [ -f /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq ]; then
+            cpu_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq 2>/dev/null)
+            if [ -n "$cpu_freq" ]; then
+                echo -e "当前频率: $((cpu_freq / 1000)) MHz"
+            fi
+        fi
+        # CPU温度（如果可用）
+        if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
+            temp=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
+            if [ -n "$temp" ]; then
+                echo -e "CPU温度: $((temp / 1000))°C"
+            fi
+        fi
+        # 负载情况
+        echo -e "负载情况: $(cat /proc/loadavg 2>/dev/null | cut -d' ' -f1-3 || echo '未知')"
+    else
+        echo "无法获取CPU信息"
+    fi
+    echo
     echo -e "${CYAN}=== 内核信息 ===${NC}"
     uname -a
     echo
     echo -e "${CYAN}=== 运行时间 ===${NC}"
     uptime
     echo
-    echo -e "${CYAN}=== CPU信息 ===${NC}"
-    grep -E "processor|model name|cpu MHz" /proc/cpuinfo 2>/dev/null | head -6
-    echo
     echo -e "${CYAN}=== 内存使用 ===${NC}"
     free -h 2>/dev/null || cat /proc/meminfo | head -3
     echo
-    echo -e "${CYAN}=== 负载情况 ===${NC}"
-    cat /proc/loadavg 2>/dev/null || echo "无法获取负载信息"
+    echo -e "${CYAN}=== 系统负载详情 ===${NC}"
+    echo -e "1分钟负载: $(cat /proc/loadavg 2>/dev/null | cut -d' ' -f1 || echo '未知')"
+    echo -e "5分钟负载: $(cat /proc/loadavg 2>/dev/null | cut -d' ' -f2 || echo '未知')"
+    echo -e "15分钟负载: $(cat /proc/loadavg 2>/dev/null | cut -d' ' -f3 || echo '未知')"
 }
 
 # 网络状态检查
