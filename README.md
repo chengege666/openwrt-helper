@@ -24,6 +24,6 @@ OpenWrt Helper
 
 这种方法通常更加优雅，且避免将脚本内容直接写入历史记录。
 ```bash
-bash <(curl -L -s https://raw.githubusercontent.com/你的用户名/openwrt-helper/main/openwrt-helper.sh)
+bash <(curl -L -s https://raw.githubusercontent.com/chengege666/openwrt-helper/main/openwrt-helper.sh)
 ```
 
