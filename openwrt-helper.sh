@@ -64,9 +64,10 @@ show_menu() {
     echo -e "  ${CYAN}10. 重启网络服务${NC}"
     echo -e "  ${CYAN}11. 备份系统配置${NC}"
     echo -e "  ${CYAN}12. 高级工具${NC}"
-    echo -e "  ${CYAN}13. 更新脚本${NC}"
-    echo -e "  ${RED}14. 重启系统${NC}"
-    echo -e "  ${RED}15. 系统恢复初始状态${NC}"
+    echo -e "  ${CYAN}13. 域名解析 (nslookup)${NC}"
+    echo -e "  ${CYAN}14. 更新脚本${NC}"
+    echo -e "  ${RED}15. 重启系统${NC}"
+    echo -e "  ${RED}16. 系统恢复初始状态${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -372,6 +373,23 @@ advanced_tools() {
     esac
 }
 
+# nslookup 工具
+nslookup_tool() {
+    log "域名解析工具 (nslookup)"
+    echo
+    read -p "请输入要查询的域名 (例如: baidu.com): " domain
+    if [ -z "$domain" ]; then
+        warn "域名不能为空"
+        return
+    fi
+    
+    if command -v nslookup >/dev/null 2>&1; then
+        nslookup "$domain"
+    else
+        error "nslookup命令不可用，请尝试安装 bind-host 或 dnsutils 软件包"
+    fi
+}
+
 # 更新脚本
 update_script() {
     log "检查脚本更新..."
@@ -603,7 +621,7 @@ main() {
     
     while true; do
         show_menu
-        echo -n -e "${WHITE}请选择操作 [0-14]: ${NC}"
+        echo -n -e "${WHITE}请选择操作 [0-16]: ${NC}"
         read choice
         
         case $choice in
@@ -619,9 +637,10 @@ main() {
             10) restart_network ;;
             11) backup_config ;;
             12) advanced_tools ;;
-            13) update_script ;;
-            14) reboot_system ;;
-            15) restore_factory ;;
+            13) nslookup_tool ;;
+            14) update_script ;;
+            15) reboot_system ;;
+            16) restore_factory ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
