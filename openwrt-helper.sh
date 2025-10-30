@@ -60,6 +60,7 @@ show_menu() {
     echo -e "  ${CYAN}12. 高级工具${NC}"
     echo -e "  ${CYAN}13. 更新脚本${NC}"
     echo -e "  ${RED}14. 重启系统${NC}"
+    echo -e "  ${RED}15. 系统恢复初始状态${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -375,6 +376,131 @@ update_script() {
     echo "当前脚本版本: 1.0"
 }
 
+# 更新脚本
+update_script() {
+    log "脚本更新功能"
+    echo
+    echo "此功能需要配置GitHub仓库URL"
+    echo "请在脚本中设置正确的仓库地址"
+    echo
+    echo "当前脚本版本: 1.0"
+}
+
+# 系统恢复初始状态
+restore_factory() {
+    echo
+    echo -e "${RED}=== 警告：系统恢复初始状态 ===${NC}"
+    echo
+    echo -e "${YELLOW}此操作将：${NC}"
+    echo -e "  • 重置所有系统配置到出厂状态"
+    echo -e "  • 删除所有自定义设置"
+    echo -e "  • 清除安装的软件包（可选）"
+    echo -e "  • 需要重启系统生效"
+    echo
+    echo -e "${RED}这是一个危险操作，将丢失所有当前配置！${NC}"
+    echo
+    
+    # 第一次确认
+    read -p "确定要继续吗？(输入 'YES' 确认): " confirm1
+    if [ "$confirm1" != "YES" ]; then
+        log "操作已取消"
+        return
+    fi
+    
+    # 第二次确认
+    echo
+    echo -e "${RED}请再次确认！这将不可撤销地重置系统！${NC}"
+    read -p "输入 'CONFIRM' 继续: " confirm2
+    if [ "$confirm2" != "CONFIRM" ]; then
+        log "操作已取消"
+        return
+    fi
+    
+    # 备份当前配置（可选）
+    echo
+    read -p "是否先备份当前配置？(y/N): " backup_choice
+    if [ "$backup_choice" = "y" ] || [ "$backup_choice" = "Y" ]; then
+        backup_config
+    fi
+    
+    # 选择恢复模式
+    echo
+    echo -e "${CYAN}选择恢复模式：${NC}"
+    echo "1. 仅重置配置（保留已安装软件）"
+    echo "2. 完全恢复出厂（清除所有软件和配置）"
+    echo "3. 取消操作"
+    echo
+    read -p "请选择 [1-3]: " mode_choice
+    
+    case $mode_choice in
+        1)
+            log "执行配置重置..."
+            # 使用firstboot命令重置配置
+            if command -v firstboot >/dev/null 2>&1; then
+                firstboot -y
+                if [ $? -eq 0 ]; then
+                    log "配置重置成功，系统将在5秒后重启..."
+                    sleep 5
+                    reboot
+                else
+                    error "配置重置失败"
+                fi
+            else
+                # 备用方法：删除配置文件
+                warn "firstboot命令不可用，尝试手动重置..."
+                rm -rf /etc/config/backup/
+                mkdir -p /etc/config/backup/
+                cp -r /etc/config/* /etc/config/backup/ 2>/dev/null || true
+                # 这里可以添加更多重置逻辑
+                warn "请手动处理或使用sysupgrade恢复"
+            fi
+            ;;
+        2)
+            log "执行完全恢复出厂..."
+            # 使用sysupgrade恢复出厂设置
+            if command -v sysupgrade >/dev/null 2>&1; then
+                warn "这将清除所有数据和软件包！"
+                read -p "确认执行完全恢复？(输入 'FACTORY' 确认): " factory_confirm
+                if [ "$factory_confirm" = "FACTORY" ]; then
+                    sysupgrade -r
+                    if [ $? -eq 0 ]; then
+                        log "系统恢复出厂设置完成，即将重启..."
+                        reboot
+                    else
+                        error "恢复出厂设置失败"
+                    fi
+                else
+                    log "操作已取消"
+                fi
+            else
+                error "sysupgrade命令不可用，无法执行完全恢复"
+            fi
+            ;;
+        3)
+            log "操作已取消"
+            return
+            ;;
+        *)
+            warn "无效选择，操作已取消"
+            return
+            ;;
+    esac
+}
+
+# 重启系统
+reboot_system() {
+    warn "警告：这将重启系统！"
+    echo
+    read -p "确认要重启系统吗？(y/N): " confirm
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        log "系统将在5秒后重启..."
+        sleep 5
+        reboot
+    else
+        log "取消重启"
+    fi
+}
+
 # 重启系统
 reboot_system() {
     warn "警告：这将重启系统！"
@@ -420,6 +546,7 @@ main() {
             12) advanced_tools ;;
             13) update_script ;;
             14) reboot_system ;;
+            15) restore_factory ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
