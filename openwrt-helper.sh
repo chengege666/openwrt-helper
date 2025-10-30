@@ -14,6 +14,12 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
+# 脚本配置
+SCRIPT_NAME="openwrt-helper.sh"
+SCRIPT_VERSION="1.1"
+SCRIPT_URL="https://raw.githubusercontent.com/chengege666/openwrt-helper/main/openwrt-helper.sh"
+BACKUP_SCRIPT="/usr/local/bin/openwrt-helper.sh"
+
 # 日志函数
 log() { echo -e "${GREEN}[INFO]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
@@ -23,7 +29,7 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 show_banner() {
     clear
     echo -e "${NC}"
-    echo -e "${CYAN}            OpenWrt 系统管理助手 v1.2${NC}"
+    echo -e "${CYAN}            OpenWrt 系统管理助手 v1.3${NC}"
     echo -e "${CYAN}        GitHub: chengege666/openwrt-helper${NC}"
     echo -e "${BLUE}=================================================${NC}"
     echo
@@ -368,22 +374,91 @@ advanced_tools() {
 
 # 更新脚本
 update_script() {
-    log "脚本更新功能"
+    log "检查脚本更新..."
     echo
-    echo "此功能需要配置GitHub仓库URL"
-    echo "请在脚本中设置正确的仓库地址"
-    echo
-    echo "当前脚本版本: 1.0"
-}
-
-# 更新脚本
-update_script() {
-    log "脚本更新功能"
-    echo
-    echo "此功能需要配置GitHub仓库URL"
-    echo "请在脚本中设置正确的仓库地址"
-    echo
-    echo "当前脚本版本: 1.0"
+    
+    # 检查是否从网络直接运行
+    if [[ "$0" == *"dev/fd"* ]] || [[ "$0" == *"pipe"* ]]; then
+        warn "检测到您正在从网络直接运行脚本"
+        echo "建议先下载脚本到本地再使用更新功能"
+        echo
+        echo "下载命令示例:"
+        echo "wget -O /usr/local/bin/openwrt-helper.sh $SCRIPT_URL"
+        echo "chmod +x /usr/local/bin/openwrt-helper.sh"
+        echo
+        read -p "是否尝试自动下载到本地? (y/N): " download_choice
+        
+        if [ "$download_choice" = "y" ] || [ "$download_choice" = "Y" ]; then
+            # 尝试下载到标准位置
+            mkdir -p /usr/local/bin/
+            if wget -O "$BACKUP_SCRIPT" "$SCRIPT_URL" 2>/dev/null; then
+                chmod +x "$BACKUP_SCRIPT"
+                log "脚本已下载到: $BACKUP_SCRIPT"
+                echo "下次请使用: $BACKUP_SCRIPT 运行脚本"
+            else
+                error "下载失败，请检查网络连接"
+            fi
+        fi
+        return
+    fi
+    
+    # 检查当前脚本路径
+    CURRENT_SCRIPT="$0"
+    log "当前脚本: $CURRENT_SCRIPT"
+    log "当前版本: $SCRIPT_VERSION"
+    
+    # 创建临时文件用于下载新版本
+    TEMP_SCRIPT="/tmp/openwrt-helper-new.sh"
+    
+    # 下载最新版本
+    log "正在从 $SCRIPT_URL 下载最新版本..."
+    if wget -O "$TEMP_SCRIPT" "$SCRIPT_URL" 2>/dev/null; then
+        # 检查下载的脚本是否有效
+        if grep -q "OpenWrt系统管理脚本" "$TEMP_SCRIPT" 2>/dev/null; then
+            # 获取新版本号
+            NEW_VERSION=$(grep "SCRIPT_VERSION" "$TEMP_SCRIPT" 2>/dev/null | head -1 | cut -d'"' -f2)
+            if [ -z "$NEW_VERSION" ]; then
+                NEW_VERSION="未知"
+            fi
+            
+            log "最新版本: $NEW_VERSION"
+            
+            if [ "$NEW_VERSION" != "$SCRIPT_VERSION" ] && [ "$NEW_VERSION" != "未知" ]; then
+                echo
+                echo -e "${GREEN}发现新版本: $NEW_VERSION${NC}"
+                echo -e "当前版本: $SCRIPT_VERSION"
+                echo
+                read -p "是否更新到最新版本? (y/N): " update_confirm
+                
+                if [ "$update_confirm" = "y" ] || [ "$update_confirm" = "Y" ]; then
+                    # 备份当前脚本
+                    BACKUP_FILE="$CURRENT_SCRIPT.backup.$(date +%Y%m%d-%H%M%S)"
+                    cp "$CURRENT_SCRIPT" "$BACKUP_FILE"
+                    
+                    # 替换脚本
+                    cp "$TEMP_SCRIPT" "$CURRENT_SCRIPT"
+                    chmod +x "$CURRENT_SCRIPT"
+                    
+                    log "脚本更新成功!"
+                    log "旧版本已备份到: $BACKUP_FILE"
+                    echo
+                    echo -e "${GREEN}更新完成! 请重新运行脚本以使用新版本。${NC}"
+                    exit 0
+                else
+                    log "更新已取消"
+                fi
+            else
+                log "当前已是最新版本"
+            fi
+        else
+            error "下载的脚本文件无效"
+        fi
+    else
+        error "下载失败，请检查网络连接"
+    fi
+    
+    # 清理临时文件
+    rm -f "$TEMP_SCRIPT"
 }
 
 # 系统恢复初始状态
