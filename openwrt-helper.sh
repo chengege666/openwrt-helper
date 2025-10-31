@@ -346,9 +346,10 @@ advanced_tools() {
     echo "1. 查看UCI配置"
     echo "2. 查看进程信息"
     echo "3. 查看系统信息"
-    echo "4. 返回主菜单"
+    echo "4. CPU压力测试"  # 新增这一行
+    echo "5. 返回主菜单"   # 原来的"4. 返回主菜单"改为5
     echo
-    read -p "请选择操作 [1-4]: " choice
+    read -p "请选择操作 [1-5]: " choice
     
     case $choice in
         1)
@@ -368,7 +369,8 @@ advanced_tools() {
             echo
             cat /proc/meminfo 2>/dev/null | head -5
             ;;
-        4) return ;;
+        4) cpu_stress_test ;;  # 新增这一行
+        5) return ;;           # 原来的4改为5
         *) warn "无效选择" ;;
     esac
 }
@@ -615,6 +617,81 @@ wait_key() {
     echo
 }
 
+# CPU压力测试功能
+cpu_stress_test() {
+    echo
+    echo -e "${CYAN}=== CPU压力测试 ===${NC}"
+    
+    # 获取CPU核心数
+    CPU_CORES=$(grep -c '^processor' /proc/cpuinfo 2>/dev/null || echo 1)
+    echo -e "检测到CPU核心数: ${GREEN}$CPU_CORES${NC}"
+    
+    echo "1. 快速测试（30秒）"
+    echo "2. 标准测试（60秒）"
+    echo "3. 长时间测试（5分钟）"
+    echo "4. 自定义测试"
+    echo "5. 停止所有测试"
+    echo "6. 返回主菜单"
+    echo
+    read -p "请选择测试模式 [1-6]: " stress_choice
+    
+    case $stress_choice in
+        1)
+            log "开始30秒快速压力测试..."
+            warn "注意：CPU使用率将升至100%"
+            timeout 30s dd if=/dev/zero of=/dev/null bs=1M &
+            echo -e "${YELLOW}测试进行中，30秒后自动停止...${NC}"
+            ;;
+        2)
+            log "开始60秒标准压力测试..."
+            warn "注意：CPU使用率将升至100%"
+            timeout 60s dd if=/dev/zero of=/dev/null bs=1M &
+            echo -e "${YELLOW}测试进行中，60秒后自动停止...${NC}"
+            ;;
+        3)
+            log "开始5分钟长时间压力测试..."
+            warn "注意：CPU温度可能升高，请监控设备温度"
+            timeout 300s dd if=/dev/zero of=/dev/null bs=1M &
+            echo -e "${YELLOW}测试进行中，5分钟后自动停止...${NC}"
+            ;;
+        4)
+            read -p "请输入测试时间（秒）: " test_time
+            read -p "请输入使用的CPU核心数 (1-$CPU_CORES): " test_cores
+            if [[ "$test_time" =~ ^[0-9]+$ ]] && [ "$test_time" -gt 0 ] && 
+               [[ "$test_cores" =~ ^[0-9]+$ ]] && [ "$test_cores" -gt 0 ] && [ "$test_cores" -le "$CPU_CORES" ]; then
+                log "开始${test_time}秒自定义压力测试，使用${test_cores}个核心"
+                for i in $(seq 1 $test_cores); do
+                    timeout ${test_time}s dd if=/dev/zero of=/dev/null bs=1M &
+                done
+                echo -e "${YELLOW}测试进行中，${test_time}秒后自动停止...${NC}"
+            else
+                error "输入参数无效"
+            fi
+            ;;
+        5)
+            log "停止所有压力测试进程..."
+            pkill -f "dd if=/dev/zero"
+            log "压力测试已停止"
+            ;;
+        6) return ;;
+        *) warn "无效选择" ;;
+    esac
+    
+    # 显示监控信息
+    if [ "$stress_choice" -ge 1 ] && [ "$stress_choice" -le 4 ]; then
+        echo
+        echo -e "${CYAN}=== 实时监控 ===${NC}"
+        echo "测试期间可以使用以下命令监控："
+        echo -e "  ${GREEN}top${NC} - 查看CPU使用率"
+        echo -e "  ${GREEN}cat /proc/loadavg${NC} - 查看系统负载"
+        if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
+            echo -e "  ${GREEN}cat /sys/class/thermal/thermal_zone0/temp${NC} - 查看温度"
+        fi
+        echo
+        echo -e "${YELLOW}测试完成后会自动停止，或选择选项5手动停止${NC}"
+    fi
+}
+
 # 主函数
 main() {
     check_system
@@ -641,6 +718,7 @@ main() {
             14) update_script ;;
             15) reboot_system ;;
             16) restore_factory ;;
+            17) cpu_stress_test ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
