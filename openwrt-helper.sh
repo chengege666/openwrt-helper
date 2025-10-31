@@ -659,4 +659,11 @@ main() {
 # 脚本入口
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
-fi
+}
+
+for i in 1 2 3 4; do 
+     dd if=/dev/zero of=/dev/null bs=1M & 
+ done 
+
+# 停止 dd 进程
+killall dd
