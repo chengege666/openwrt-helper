@@ -16,7 +16,7 @@ NC='\033[0m'
 
 # 脚本配置
 SCRIPT_NAME="openwrt-helper.sh"
-SCRIPT_VERSION="1.3"
+SCRIPT_VERSION="1.6"
 SCRIPT_URL="https://raw.githubusercontent.com/chengege666/openwrt-helper/main/openwrt-helper.sh"
 BACKUP_SCRIPT="/usr/local/bin/openwrt-helper.sh"
 
@@ -29,7 +29,7 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 show_banner() {
     clear
     echo -e "${NC}"
-    echo -e "${CYAN}            OpenWrt 系统管理助手 v1.3${NC}"
+    echo -e "${CYAN}            OpenWrt 系统管理助手 v1.6${NC}"
     echo -e "${CYAN}        GitHub: chengege666/openwrt-helper${NC}"
     echo -e "${BLUE}=================================================${NC}"
     echo
