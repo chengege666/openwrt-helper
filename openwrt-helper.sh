@@ -639,20 +639,71 @@ cpu_stress_test() {
         1)
             log "开始30秒快速压力测试..."
             warn "注意：CPU使用率将升至100%"
-            timeout 30s dd if=/dev/zero of=/dev/null bs=1M &
+            # 使用更有效的CPU压力测试方法
+            stress_cpu() {
+                while true; do
+                    # 计算质数，更有效的CPU占用
+                    i=2
+                    while [ $i -lt 1000 ]; do
+                        j=2
+                        while [ $j -lt $i ]; do
+                            [ $((i % j)) -eq 0 ] && break
+                            j=$((j + 1))
+                        done
+                        i=$((i + 1))
+                    done
+                done
+            }
+            # 为每个核心启动一个压力测试进程
+            for core in $(seq 1 $CPU_CORES); do
+                timeout 30s bash -c "$(declare -f stress_cpu); stress_cpu" &
+            done
             echo -e "${YELLOW}测试进行中，30秒后自动停止...${NC}"
+            echo -e "${GREEN}使用 'top' 命令查看CPU使用率${NC}"
             ;;
         2)
             log "开始60秒标准压力测试..."
             warn "注意：CPU使用率将升至100%"
-            timeout 60s dd if=/dev/zero of=/dev/null bs=1M &
+            stress_cpu() {
+                while true; do
+                    i=2
+                    while [ $i -lt 1000 ]; do
+                        j=2
+                        while [ $j -lt $i ]; do
+                            [ $((i % j)) -eq 0 ] && break
+                            j=$((j + 1))
+                        done
+                        i=$((i + 1))
+                    done
+                done
+            }
+            for core in $(seq 1 $CPU_CORES); do
+                timeout 60s bash -c "$(declare -f stress_cpu); stress_cpu" &
+            done
             echo -e "${YELLOW}测试进行中，60秒后自动停止...${NC}"
+            echo -e "${GREEN}使用 'top' 命令查看CPU使用率${NC}"
             ;;
         3)
             log "开始5分钟长时间压力测试..."
             warn "注意：CPU温度可能升高，请监控设备温度"
-            timeout 300s dd if=/dev/zero of=/dev/null bs=1M &
+            stress_cpu() {
+                while true; do
+                    i=2
+                    while [ $i -lt 1000 ]; do
+                        j=2
+                        while [ $j -lt $i ]; do
+                            [ $((i % j)) -eq 0 ] && break
+                            j=$((j + 1))
+                        done
+                        i=$((i + 1))
+                    done
+                done
+            }
+            for core in $(seq 1 $CPU_CORES); do
+                timeout 300s bash -c "$(declare -f stress_cpu); stress_cpu" &
+            done
             echo -e "${YELLOW}测试进行中，5分钟后自动停止...${NC}"
+            echo -e "${GREEN}使用 'top' 命令查看CPU使用率${NC}"
             ;;
         4)
             read -p "请输入测试时间（秒）: " test_time
@@ -660,17 +711,37 @@ cpu_stress_test() {
             if [[ "$test_time" =~ ^[0-9]+$ ]] && [ "$test_time" -gt 0 ] && 
                [[ "$test_cores" =~ ^[0-9]+$ ]] && [ "$test_cores" -gt 0 ] && [ "$test_cores" -le "$CPU_CORES" ]; then
                 log "开始${test_time}秒自定义压力测试，使用${test_cores}个核心"
+                stress_cpu() {
+                    while true; do
+                        i=2
+                        while [ $i -lt 1000 ]; do
+                            j=2
+                            while [ $j -lt $i ]; do
+                                [ $((i % j)) -eq 0 ] && break
+                                j=$((j + 1))
+                            done
+                            i=$((i + 1))
+                        done
+                    done
+                }
                 for i in $(seq 1 $test_cores); do
-                    timeout ${test_time}s dd if=/dev/zero of=/dev/null bs=1M &
+                    timeout ${test_time}s bash -c "$(declare -f stress_cpu); stress_cpu" &
                 done
                 echo -e "${YELLOW}测试进行中，${test_time}秒后自动停止...${NC}"
+                echo -e "${GREEN}使用 'top' 命令查看CPU使用率${NC}"
             else
                 error "输入参数无效"
             fi
             ;;
         5)
             log "停止所有压力测试进程..."
-            pkill -f "dd if=/dev/zero"
+            # 停止所有相关的压力测试进程
+            pkill -f "timeout"
+            pkill -f "stress_cpu"
+            # 添加一个小延迟确保进程被终止
+            sleep 1
+            # 再次检查并终止可能残留的进程
+            pkill -f "bash.*stress_cpu"
             log "压力测试已停止"
             ;;
         6) return ;;
@@ -682,12 +753,13 @@ cpu_stress_test() {
         echo
         echo -e "${CYAN}=== 实时监控 ===${NC}"
         echo "测试期间可以使用以下命令监控："
-        echo -e "  ${GREEN}top${NC} - 查看CPU使用率"
+        echo -e "  ${GREEN}top${NC} - 查看CPU使用率（实时监控）"
         echo -e "  ${GREEN}cat /proc/loadavg${NC} - 查看系统负载"
         if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
             echo -e "  ${GREEN}cat /sys/class/thermal/thermal_zone0/temp${NC} - 查看温度"
         fi
         echo
+        echo -e "${YELLOW}提示：打开另一个终端窗口运行 'top' 命令查看实时CPU使用率${NC}"
         echo -e "${YELLOW}测试完成后会自动停止，或选择选项5手动停止${NC}"
     fi
 }
