@@ -62,12 +62,8 @@ show_menu() {
     echo -e "  ${CYAN}8. 系统服务管理${NC}"
     echo -e "  ${CYAN}9. 系统日志查看${NC}"
     echo -e "  ${CYAN}10. 重启网络服务${NC}"
-    echo -e "  ${CYAN}11. 备份系统配置${NC}"
-    echo -e "  ${CYAN}12. 高级工具${NC}"
-    echo -e "  ${CYAN}13. 域名解析 (nslookup)${NC}"
-    echo -e "  ${CYAN}14. 更新脚本${NC}"
-    echo -e "  ${RED}15. 重启系统${NC}"
-    echo -e "  ${RED}16. 系统恢复初始状态${NC}"
+    echo -e "  ${CYAN}11. 域名解析 (nslookup)${NC}"
+    echo -e "  ${RED}12. 重启系统${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -580,19 +576,7 @@ restore_factory() {
     esac
 }
 
-# 重启系统
-reboot_system() {
-    warn "警告：这将重启系统！"
-    echo
-    read -p "确认要重启系统吗？(y/N): " confirm
-    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
-        log "系统将在5秒后重启..."
-        sleep 5
-        reboot
-    else
-        log "取消重启"
-    fi
-}
+
 
 # 重启系统
 reboot_system() {
@@ -621,7 +605,7 @@ main() {
     
     while true; do
         show_menu
-        echo -n -e "${WHITE}请选择操作 [0-16]: ${NC}"
+        echo -n -e "${WHITE}请选择操作 [0-12]: ${NC}"
         read choice
         
         case $choice in
@@ -635,12 +619,8 @@ main() {
             8) service_management ;;
             9) log_view ;;
             10) restart_network ;;
-            11) backup_config ;;
-            12) advanced_tools ;;
-            13) nslookup_tool ;;
-            14) update_script ;;
-            15) reboot_system ;;
-            16) restore_factory ;;
+            11) nslookup_tool ;;
+            12) reboot_system ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
