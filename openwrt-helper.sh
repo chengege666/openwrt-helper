@@ -58,12 +58,11 @@ show_menu() {
     echo -e "  ${CYAN}4. 防火墙状态${NC}"
     echo -e "  ${CYAN}5. 软件包管理${NC}"
     echo -e "  ${CYAN}6. 磁盘空间检查${NC}"
-    echo -e "  ${CYAN}7. 网络速度测试${NC}"
-    echo -e "  ${CYAN}8. 系统服务管理${NC}"
-    echo -e "  ${CYAN}9. 系统日志查看${NC}"
-    echo -e "  ${CYAN}10. 重启网络服务${NC}"
-    echo -e "  ${CYAN}11. 域名解析 (nslookup)${NC}"
-    echo -e "  ${RED}12. 重启系统${NC}"
+    echo -e "  ${CYAN}7. 系统服务管理${NC}"
+    echo -e "  ${CYAN}8. 系统日志查看${NC}"
+    echo -e "  ${CYAN}9. 重启网络服务${NC}"
+    echo -e "  ${CYAN}10. 域名解析 (nslookup)${NC}"
+    echo -e "  ${RED}11. 重启系统${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -605,7 +604,7 @@ main() {
     
     while true; do
         show_menu
-        echo -n -e "${WHITE}请选择操作 [0-12]: ${NC}"
+        echo -n -e "${WHITE}请选择操作 [0-11]: ${NC}"
         read choice
         
         case $choice in
@@ -615,12 +614,11 @@ main() {
             4) firewall_status ;;
             5) package_management ;;
             6) disk_check ;;
-            7) speed_test ;;
-            8) service_management ;;
-            9) log_view ;;
-            10) restart_network ;;
-            11) nslookup_tool ;;
-            12) reboot_system ;;
+            7) service_management ;;
+            8) log_view ;;
+            9) restart_network ;;
+            10) nslookup_tool ;;
+            11) reboot_system ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
