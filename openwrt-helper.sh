@@ -599,48 +599,6 @@ wait_key() {
     echo
 }
 
-# 主函数
-main() {
-    check_system
-    
-    while true; do
-        show_menu
-        echo -n -e "${WHITE}请选择操作 [0-12]: ${NC}"
-        read choice
-        
-        case $choice in
-            1) system_info ;;
-            2) network_check ;;
-            3) wireless_management ;;
-            4) firewall_status ;;
-            5) package_management ;;
-            6) disk_check ;;
-            7) service_management ;;
-            8) log_view ;;
-            9) restart_network ;;
-            10) nslookup_tool ;;
-            11) switch_opkg_source ;;
-            12) reboot_system ;;
-            0) 
-                log "感谢使用，再见！"
-                exit 0 
-                ;;
-            *) 
-                error "无效选择，请重新输入"
-                sleep 2
-                continue
-                ;;
-        esac
-        
-        wait_key
-    done
-}
-
-# 脚本入口
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
-
 switch_opkg_source() {
     log "OpenWrt 软件源一键切换"
     
@@ -696,3 +654,45 @@ switch_opkg_source() {
         fi
     fi
 }
+
+# 主函数
+main() {
+    check_system
+    
+    while true; do
+        show_menu
+        echo -n -e "${WHITE}请选择操作 [0-12]: ${NC}"
+        read choice
+        
+        case $choice in
+            1) system_info ;;
+            2) network_check ;;
+            3) wireless_management ;;
+            4) firewall_status ;;
+            5) package_management ;;
+            6) disk_check ;;
+            7) service_management ;;
+            8) log_view ;;
+            9) restart_network ;;
+            10) nslookup_tool ;;
+            11) switch_opkg_source ;;
+            12) reboot_system ;;
+            0) 
+                log "感谢使用，再见！"
+                exit 0 
+                ;;
+            *) 
+                error "无效选择，请重新输入"
+                sleep 2
+                continue
+                ;;
+        esac
+        
+        wait_key
+    done
+}
+
+# 脚本入口
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
