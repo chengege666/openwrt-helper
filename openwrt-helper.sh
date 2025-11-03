@@ -62,8 +62,7 @@ show_menu() {
     echo -e "  ${CYAN}8. 系统日志查看${NC}"
     echo -e "  ${CYAN}9. 重启网络服务${NC}"
     echo -e "  ${CYAN}10. 域名解析 (nslookup)${NC}"
-    echo -e "  ${CYAN}11. OpenWrt 软件源一键切换${NC}"
-    echo -e "  ${RED}12. 重启系统${NC}"
+    echo -e "  ${RED}11. 重启系统${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -599,69 +598,13 @@ wait_key() {
     echo
 }
 
-switch_opkg_source() {
-    log "OpenWrt 软件源一键切换"
-    
-    local current_source=$(grep -m 1 "src/gz" /etc/opkg/distfeeds.conf | awk '{print $2}')
-    log "当前软件源: ${current_source}"
-    
-    echo -e "${CYAN}请选择要切换的软件源: ${NC}"
-    echo "1. 官方源 (downloads.openwrt.org)"
-    echo "2. 清华大学镜像源 (mirrors.tuna.tsinghua.edu.cn)"
-    echo "3. 中国科学技术大学镜像源 (mirrors.ustc.edu.cn)"
-    echo "0. 返回主菜单"
-    echo
-    read -p "请选择 [0-3]: " choice
-    
-    local new_source_base=""
-    case $choice in
-        1)
-            new_source_base="downloads.openwrt.org"
-            ;;
-        2)
-            new_source_base="mirrors.tuna.tsinghua.edu.cn/openwrt"
-            ;;
-        3)
-            new_source_base="mirrors.ustc.edu.cn/openwrt"
-            ;;
-        0)
-            log "取消切换软件源"
-            return
-            ;;
-        *)
-            error "无效选择，请重新输入"
-            sleep 2
-            return
-            ;;
-    esac
-    
-    if [ -n "$new_source_base" ]; then
-        log "正在切换软件源到: ${new_source_base}"
-        # 备份原始配置文件
-        cp /etc/opkg/distfeeds.conf /etc/opkg/distfeeds.conf.bak
-        
-        # 使用sed替换所有源地址
-        sed -i "s|downloads.openwrt.org|${new_source_base}|g" /etc/opkg/distfeeds.conf
-        sed -i "s|mirrors.tuna.tsinghua.edu.cn/openwrt|${new_source_base}|g" /etc/opkg/distfeeds.conf
-        sed -i "s|mirrors.ustc.edu.cn/openwrt|${new_source_base}|g" /etc/opkg/distfeeds.conf
-        
-        log "软件源切换完成，正在更新软件包列表..."
-        opkg update
-        if [ $? -eq 0 ]; then
-            log "软件包列表更新成功！"
-        else
-            error "软件包列表更新失败，请检查网络或源地址！"
-        fi
-    fi
-}
-
 # 主函数
 main() {
     check_system
     
     while true; do
         show_menu
-        echo -n -e "${WHITE}请选择操作 [0-12]: ${NC}"
+        echo -n -e "${WHITE}请选择操作 [0-11]: ${NC}"
         read choice
         
         case $choice in
@@ -675,8 +618,7 @@ main() {
             8) log_view ;;
             9) restart_network ;;
             10) nslookup_tool ;;
-            11) switch_opkg_source ;;
-            12) reboot_system ;;
+            11) reboot_system ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
