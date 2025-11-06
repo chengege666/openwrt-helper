@@ -62,7 +62,8 @@ show_menu() {
     echo -e "  ${CYAN}8. 系统日志查看${NC}"
     echo -e "  ${CYAN}9. 重启网络服务${NC}"
     echo -e "  ${CYAN}10. 域名解析 (nslookup)${NC}"
-    echo -e "  ${RED}11. 重启系统${NC}"
+    echo -e "  ${CYAN}11. 一键安装所有依赖${NC}"
+    echo -e "  ${RED}12. 重启系统${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -577,6 +578,76 @@ restore_factory() {
 
 
 
+# 一键安装所有依赖
+install_dependencies() {
+    log "正在安装常用依赖包..."
+    echo
+
+    if ! command -v opkg >/dev/null 2>&1; then
+        error "opkg命令不可用，无法安装依赖包。请检查您的OpenWrt系统。"
+        return
+    fi
+
+    # 定义常用依赖包列表
+    # 可以根据需要添加或删除这里的包
+    DEPENDENCIES=(
+        "wget"
+        "curl"
+        "unzip"
+        "tar"
+        "gzip"
+        "bzip2"
+        "coreutils"
+        "findutils"
+        "grep"
+        "sed"
+        "awk"
+        "vim"
+        "nano"
+        "htop"
+        "iftop"
+        "tcpdump"
+        "bind-host" # 提供nslookup
+        "dnsmasq-full" # 替换dnsmasq，提供更多功能
+        "luci" # 如果需要Web界面
+        "luci-app-opkg" # LuCI的软件包管理界面
+        "openssh-client"
+        "openssh-server"
+        "git"
+        "svn"
+        "rsync"
+        "samba3-server" # 文件共享
+        "vsftpd" # FTP服务器
+        "nginx" # Web服务器
+        "php7-cli" # PHP命令行
+        "python3" # Python3
+        "python3-pip" # Python3的pip
+        "node" # Node.js
+        "npm" # npm包管理器
+    )
+
+    INSTALLED_COUNT=0
+    FAILED_COUNT=0
+
+    for pkg in "${DEPENDENCIES[@]}"; do
+        log "正在安装 $pkg ..."
+        if opkg install "$pkg"; then
+            log "$pkg 安装成功。"
+            INSTALLED_COUNT=$((INSTALLED_COUNT + 1))
+        else
+            warn "$pkg 安装失败，可能已安装或不存在。"
+            FAILED_COUNT=$((FAILED_COUNT + 1))
+        fi
+        echo
+    done
+
+    log "依赖包安装完成。"
+    log "成功安装: $INSTALLED_COUNT 个"
+    log "失败/跳过: $FAILED_COUNT 个"
+    echo
+    warn "请注意：某些包可能不适用于您的OpenWrt版本或架构。"
+}
+
 # 重启系统
 reboot_system() {
     warn "警告：这将重启系统！"
@@ -604,7 +675,7 @@ main() {
     
     while true; do
         show_menu
-        echo -n -e "${WHITE}请选择操作 [0-11]: ${NC}"
+        echo -n -e "${WHITE}请选择操作 [0-12]: ${NC}"
         read choice
         
         case $choice in
@@ -618,12 +689,13 @@ main() {
             8) log_view ;;
             9) restart_network ;;
             10) nslookup_tool ;;
-            11) reboot_system ;;
+            11) install_dependencies ;;
+            12) reboot_system ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
                 ;;
-            *) 
+            *)
                 error "无效选择，请重新输入"
                 sleep 2
                 continue
