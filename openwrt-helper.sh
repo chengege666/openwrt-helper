@@ -16,7 +16,7 @@ NC='\033[0m'
 
 # 脚本配置
 SCRIPT_NAME="openwrt-helper.sh"
-SCRIPT_VERSION="1.9"
+SCRIPT_VERSION="1.8"
 SCRIPT_URL="https://raw.githubusercontent.com/chengege666/openwrt-helper/main/openwrt-helper.sh"
 BACKUP_SCRIPT="/usr/local/bin/openwrt-helper.sh"
 
@@ -65,8 +65,6 @@ show_menu() {
     echo -e "  ${CYAN}11. 一键安装所有依赖${NC}"
     echo -e "  ${CYAN}12. 查看已安装的依赖${NC}"
     echo -e "  ${RED}13. 重启系统${NC}"
-    echo -e "  ${CYAN}14. OpenWrt 一键换源${NC}"
-    echo -e "  ${CYAN}15. iStoreOS 风格和应用商店切换${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -679,126 +677,6 @@ reboot_system() {
     fi
 }
 
-change_opkg_source() {
-    log "OpenWrt 一键换源功能"
-    echo "请选择要切换的源："
-    echo "1. 官方源"
-    echo "2. 清华大学源"
-    echo "3. 中国科学技术大学源"
-    echo "4. 自定义源"
-    echo "0. 返回主菜单"
-    read -p "请输入你的选择: " source_choice
-
-    OPKG_CONF="/etc/opkg/distfeeds.conf"
-    BACKUP_CONF="${OPKG_CONF}.bak"
-
-    if [ ! -f "$OPKG_CONF" ]; then
-        error "opkg 配置文件 $OPKG_CONF 不存在，无法切换源。"
-        wait_key
-        return
-    fi
-
-    log "备份当前 opkg 配置文件到 $BACKUP_CONF"
-    cp "$OPKG_CONF" "$BACKUP_CONF"
-
-    case $source_choice in
-        1)
-            log "切换到官方源..."
-            # 恢复备份文件，确保回到原始官方源状态
-            cp "$BACKUP_CONF" "$OPKG_CONF"
-            log "已恢复到官方源配置。"
-            ;;
-        2)
-            log "切换到清华大学源..."
-            sed -i 's|downloads.openwrt.org|mirrors.tuna.tsinghua.edu.cn/openwrt|g' "$OPKG_CONF"
-            log "已切换到清华大学源。"
-            ;;
-        3)
-            log "切换到中国科学技术大学源..."
-            sed -i 's|downloads.openwrt.org|mirrors.ustc.edu.cn/openwrt|g' "$OPKG_CONF"
-            log "已切换到中国科学技术大学源。"
-            ;;
-        4)
-            read -p "请输入自定义源地址 (例如: mirrors.aliyun.com/openwrt): " custom_url
-            if [ -z "$custom_url" ]; then
-                error "自定义源地址不能为空。"
-                wait_key
-                return
-            fi
-            log "切换到自定义源: $custom_url"
-            sed -i "s|downloads.openwrt.org|$custom_url|g" "$OPKG_CONF"
-            log "已切换到自定义源。"
-            ;;
-        0)
-            log "取消切换源。"
-            return
-            ;;
-        *)
-            error "无效的选择，请重新输入。"
-            wait_key
-            return
-            ;;
-    esac
-
-    log "更新 opkg 软件包列表..."
-    opkg update
-    if [ $? -eq 0 ]; then
-        log "opkg 软件包列表更新成功！"
-    else
-        error "opkg 软件包列表更新失败，请检查网络或源配置。"
-    fi
-    wait_key
-}
-
-change_istoreos_style() {
-    log "iStoreOS 风格和应用商店切换功能"
-    echo "请选择操作："
-    echo "1. 切换 iStoreOS 风格"
-    echo "2. 切换应用商店"
-    echo "0. 返回主菜单"
-    read -p "请输入你的选择: " istoreos_choice
-
-    # 假设 iStoreOS 的配置文件路径，你需要根据实际情况修改
-    # 例如：ISTOREOS_CONFIG_FILE="/etc/config/istoreos"
-    # 例如：ISTOREOS_THEME_FILE="/etc/config/luci"
-    # 例如：ISTOREOS_APPSTORE_FILE="/etc/config/appstore"
-    ISTOREOS_CONFIG_FILE="/tmp/istoreos_config.conf" # 示例路径，请替换为实际路径
-    BACKUP_CONFIG_FILE="${ISTOREOS_CONFIG_FILE}.bak"
-
-    if [ ! -f "$ISTOREOS_CONFIG_FILE" ]; then
-        warn "iStoreOS 配置文件 $ISTOREOS_CONFIG_FILE 不存在。请手动确认配置文件路径。"
-        # 如果文件不存在，仍然允许用户尝试操作，但会给出警告
-    else
-        log "备份当前 iStoreOS 配置文件到 $BACKUP_CONFIG_FILE"
-        cp "$ISTOREOS_CONFIG_FILE" "$BACKUP_CONFIG_FILE"
-    fi
-
-    case $istoreos_choice in
-        1)
-            log "切换 iStoreOS 风格..."
-            warn "此功能需要根据 iStoreOS 的具体配置进行修改。"
-            warn "请手动编辑相关配置文件，例如 /etc/config/luci 或其他主题配置文件。"
-            warn "示例：sed -i 's/old_theme/new_theme/g' ${ISTOREOS_THEME_FILE}"
-            # 在这里添加实际的风格切换逻辑
-            ;;
-        2)
-            log "切换应用商店..."
-            warn "此功能需要根据 iStoreOS 的具体配置进行修改。"
-            warn "请手动编辑相关配置文件，例如 /etc/config/appstore 或其他应用商店配置文件。"
-            warn "示例：sed -i 's/old_appstore_url/new_appstore_url/g' ${ISTOREOS_APPSTORE_FILE}"
-            # 在这里添加实际的应用商店切换逻辑
-            ;;
-        0)
-            log "取消 iStoreOS 风格和应用商店切换。"
-            return
-            ;;
-        *)
-            error "无效的选择，请重新输入。"
-            ;;
-    esac
-    wait_key
-}
-
 # 等待按键
 wait_key() {
     echo
@@ -812,7 +690,7 @@ main() {
     
     while true; do
         show_menu
-        echo -n -e "${WHITE}请选择操作 [0-15]: ${NC}"
+        echo -n -e "${WHITE}请选择操作 [0-13]: ${NC}"
         read choice
         
         case $choice in
@@ -829,8 +707,6 @@ main() {
             11) install_dependencies ;;
             12) view_installed_dependencies ;;
             13) reboot_system ;;
-            14) change_opkg_source ;;
-            15) change_istoreos_style ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
