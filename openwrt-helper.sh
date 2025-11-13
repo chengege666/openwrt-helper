@@ -65,6 +65,8 @@ show_menu() {
     echo -e "  ${CYAN}11. 一键安装所有依赖${NC}"
     echo -e "  ${CYAN}12. 查看已安装的依赖${NC}"
     echo -e "  ${RED}13. 重启系统${NC}"
+    echo -e "  ${CYAN}14. OpenWrt 一键换源${NC}"
+    echo -e "  ${CYAN}15. iStoreOS 风格和应用商店切换${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -677,6 +679,73 @@ reboot_system() {
     fi
 }
 
+change_opkg_source() {
+    log "OpenWrt 一键换源功能"
+    echo "请选择要切换的源："
+    echo "1. 官方源"
+    echo "2. 清华大学源"
+    echo "3. 中国科学技术大学源"
+    echo "4. 自定义源"
+    echo "0. 返回主菜单"
+    read -p "请输入你的选择: " source_choice
+
+    case $source_choice in
+        1)
+            log "切换到官方源..."
+            # 这里需要根据实际情况修改 /etc/opkg/distfeeds.conf 文件
+            # 示例：sed -i 's/old_url/new_url/g' /etc/opkg/distfeeds.conf
+            warn "此功能尚未完全实现，请手动编辑 /etc/opkg/distfeeds.conf 文件。"
+            ;;
+        2)
+            log "切换到清华大学源..."
+            warn "此功能尚未完全实现，请手动编辑 /etc/opkg/distfeeds.conf 文件。"
+            ;;
+        3)
+            log "切换到中国科学技术大学源..."
+            warn "此功能尚未完全实现，请手动编辑 /etc/opkg/distfeeds.conf 文件。"
+            ;;
+        4)
+            read -p "请输入自定义源地址: " custom_url
+            log "切换到自定义源: $custom_url"
+            warn "此功能尚未完全实现，请手动编辑 /etc/opkg/distfeeds.conf 文件。"
+            ;;
+        0)
+            return
+            ;;
+        *)
+            error "无效的选择，请重新输入。"
+            ;;
+    esac
+    wait_key
+}
+
+change_istoreos_style() {
+    log "iStoreOS 风格和应用商店切换功能"
+    echo "请选择操作："
+    echo "1. 切换 iStoreOS 风格"
+    echo "2. 切换应用商店"
+    echo "0. 返回主菜单"
+    read -p "请输入你的选择: " istoreos_choice
+
+    case $istoreos_choice in
+        1)
+            log "切换 iStoreOS 风格..."
+            warn "此功能尚未完全实现，需要根据 iStoreOS 的具体配置进行修改。"
+            ;;
+        2)
+            log "切换应用商店..."
+            warn "此功能尚未完全实现，需要根据 iStoreOS 的具体配置进行修改。"
+            ;;
+        0)
+            return
+            ;;
+        *)
+            error "无效的选择，请重新输入。"
+            ;;
+    esac
+    wait_key
+}
+
 # 等待按键
 wait_key() {
     echo
@@ -690,7 +759,7 @@ main() {
     
     while true; do
         show_menu
-        echo -n -e "${WHITE}请选择操作 [0-13]: ${NC}"
+        echo -n -e "${WHITE}请选择操作 [0-15]: ${NC}"
         read choice
         
         case $choice in
@@ -707,6 +776,8 @@ main() {
             11) install_dependencies ;;
             12) view_installed_dependencies ;;
             13) reboot_system ;;
+            14) change_opkg_source ;;
+            15) change_istoreos_style ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
