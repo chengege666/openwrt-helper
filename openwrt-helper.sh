@@ -758,16 +758,38 @@ change_istoreos_style() {
     echo "0. 返回主菜单"
     read -p "请输入你的选择: " istoreos_choice
 
+    # 假设 iStoreOS 的配置文件路径，你需要根据实际情况修改
+    # 例如：ISTOREOS_CONFIG_FILE="/etc/config/istoreos"
+    # 例如：ISTOREOS_THEME_FILE="/etc/config/luci"
+    # 例如：ISTOREOS_APPSTORE_FILE="/etc/config/appstore"
+    ISTOREOS_CONFIG_FILE="/tmp/istoreos_config.conf" # 示例路径，请替换为实际路径
+    BACKUP_CONFIG_FILE="${ISTOREOS_CONFIG_FILE}.bak"
+
+    if [ ! -f "$ISTOREOS_CONFIG_FILE" ]; then
+        warn "iStoreOS 配置文件 $ISTOREOS_CONFIG_FILE 不存在。请手动确认配置文件路径。"
+        # 如果文件不存在，仍然允许用户尝试操作，但会给出警告
+    else
+        log "备份当前 iStoreOS 配置文件到 $BACKUP_CONFIG_FILE"
+        cp "$ISTOREOS_CONFIG_FILE" "$BACKUP_CONFIG_FILE"
+    fi
+
     case $istoreos_choice in
         1)
             log "切换 iStoreOS 风格..."
-            warn "此功能尚未完全实现，需要根据 iStoreOS 的具体配置进行修改。"
+            warn "此功能需要根据 iStoreOS 的具体配置进行修改。"
+            warn "请手动编辑相关配置文件，例如 /etc/config/luci 或其他主题配置文件。"
+            warn "示例：sed -i 's/old_theme/new_theme/g' ${ISTOREOS_THEME_FILE}"
+            # 在这里添加实际的风格切换逻辑
             ;;
         2)
             log "切换应用商店..."
-            warn "此功能尚未完全实现，需要根据 iStoreOS 的具体配置进行修改。"
+            warn "此功能需要根据 iStoreOS 的具体配置进行修改。"
+            warn "请手动编辑相关配置文件，例如 /etc/config/appstore 或其他应用商店配置文件。"
+            warn "示例：sed -i 's/old_appstore_url/new_appstore_url/g' ${ISTOREOS_APPSTORE_FILE}"
+            # 在这里添加实际的应用商店切换逻辑
             ;;
         0)
+            log "取消 iStoreOS 风格和应用商店切换。"
             return
             ;;
         *)
