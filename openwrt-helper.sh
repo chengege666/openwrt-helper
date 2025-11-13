@@ -689,25 +689,60 @@ change_opkg_source() {
     echo "0. 返回主菜单"
     read -p "请输入你的选择: " source_choice
 
+    OPKG_CONF="/etc/opkg/distfeeds.conf"
+    OFFICIAL_URL_BASE="http://downloads.openwrt.org"
+    TSINGHUA_URL_BASE="https://mirrors.tuna.tsinghua.edu.cn/openwrt"
+    USTC_URL_BASE="https://mirrors.ustc.edu.cn/openwrt"
+
+    # Function to replace opkg source
+    replace_opkg_source() {
+        local new_base_url=$1
+        # Assuming the default OpenWrt source base URL is http://downloads.openwrt.org
+        # If your current source is different, this sed command might need adjustment.
+        local old_base_url_pattern="http://downloads.openwrt.org"
+
+        if [ ! -f "$OPKG_CONF" ]; then
+            error "$OPKG_CONF 文件不存在，无法切换源。"
+            return 1
+        fi
+
+        log "备份 $OPKG_CONF 到 $OPKG_CONF.bak..."
+        cp "$OPKG_CONF" "$OPKG_CONF.bak"
+
+        log "正在将源切换到: $new_base_url"
+        # Use a temporary file for sed to avoid issues with direct in-place editing on some systems
+        sed "s|$old_base_url_pattern|$new_base_url|g" "$OPKG_CONF" > "$OPKG_CONF.tmp" && mv "$OPKG_CONF.tmp" "$OPKG_CONF"
+
+        if [ $? -eq 0 ]; then
+            log "源切换成功。正在更新软件包列表..."
+            opkg update
+            if [ $? -eq 0 ]; then
+                log "软件包列表更新成功！"
+            else
+                error "软件包列表更新失败，请检查网络连接或源地址。"
+            fi
+        else
+            error "源切换失败，请检查 $OPKG_CONF 文件内容或手动修改。"
+        fi
+    }
+
     case $source_choice in
         1)
             log "切换到官方源..."
-            # 这里需要根据实际情况修改 /etc/opkg/distfeeds.conf 文件
-            # 示例：sed -i 's/old_url/new_url/g' /etc/opkg/distfeeds.conf
-            warn "此功能尚未完全实现，请手动编辑 /etc/opkg/distfeeds.conf 文件。"
+            replace_opkg_source "$OFFICIAL_URL_BASE"
             ;;
         2)
             log "切换到清华大学源..."
-            warn "此功能尚未完全实现，请手动编辑 /etc/opkg/distfeeds.conf 文件。"
+            replace_opkg_source "$TSINGHUA_URL_BASE"
             ;;
         3)
             log "切换到中国科学技术大学源..."
-            warn "此功能尚未完全实现，请手动编辑 /etc/opkg/distfeeds.conf 文件。"
+            replace_opkg_source "$USTC_URL_BASE"
             ;;
         4)
             read -p "请输入自定义源地址: " custom_url
             log "切换到自定义源: $custom_url"
-            warn "此功能尚未完全实现，请手动编辑 /etc/opkg/distfeeds.conf 文件。"
+            replace_opkg_source "$custom_url"
             ;;
         0)
             return
