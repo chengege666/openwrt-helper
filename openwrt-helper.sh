@@ -16,7 +16,7 @@ NC='\033[0m'
 
 # 脚本配置
 SCRIPT_NAME="openwrt-helper.sh"
-SCRIPT_VERSION="1.8"
+SCRIPT_VERSION="1.9"
 SCRIPT_URL="https://raw.githubusercontent.com/chengege666/openwrt-helper/main/openwrt-helper.sh"
 BACKUP_SCRIPT="/usr/local/bin/openwrt-helper.sh"
 
