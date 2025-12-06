@@ -589,8 +589,7 @@ install_dependencies() {
         return
     fi
 
-    # 定义常用依赖包列表
-    # 可以根据需要添加或删除这里的包
+    # 定义常用依赖包列表（已去重）
     DEPENDENCIES=(
         "wget"
         "curl"
@@ -625,6 +624,25 @@ install_dependencies() {
         "python3-pip" # Python3的pip
         "node" # Node.js
         "npm" # npm包管理器
+        "luci-base"
+        "bash"
+        "ca-bundle"
+        "ipset"
+        "ip-full"
+        "ruby"
+        "ruby-yaml"
+        "iptables"
+        "kmod-ipt-nat"
+        "iptables-mod-tproxy"
+        "iptables-mod-extra"
+        "kmod-tun"
+        "luci-compat"
+        "ip6tables-mod-nat"
+        "kmod-inet-diag"
+        "kmod-nft-tproxy"
+        "yq"
+        "firewall4"
+        "kmod-nft-socket"
     )
 
     INSTALLED_COUNT=0
@@ -647,20 +665,6 @@ install_dependencies() {
     log "失败/跳过: $FAILED_COUNT 个"
     echo
     warn "请注意：某些包可能不适用于您的OpenWrt版本或架构。"
-}
-
-# 查看已安装的依赖
-view_installed_dependencies() {
-    log "正在查看已安装的依赖包..."
-    echo
-
-    if command -v opkg >/dev/null 2>&1; then
-        echo -e "${CYAN}=== 已安装的软件包 ===${NC}"
-        opkg list-installed
-    else
-        error "opkg命令不可用，无法查看已安装的依赖包。请检查您的OpenWrt系统。"
-    fi
-    echo
 }
 
 # 重启系统
