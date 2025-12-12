@@ -65,6 +65,7 @@ show_menu() {
     echo -e "  ${CYAN}11. 一键安装所有依赖${NC}"
     
     echo -e "  ${RED}12. 重启系统${NC}"
+    echo -e "  ${PURPLE}13. 切换软件源${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -681,6 +682,63 @@ reboot_system() {
     fi
 }
 
+# 切换软件源
+switch_opkg_source() {
+    log "切换OPKG软件源"
+    echo
+    warn "此功能将修改 /etc/opkg/distfeeds.conf 文件，请谨慎操作！"
+    echo
+    echo -e "${CYAN}请选择要切换的软件源：${NC}"
+    echo "1. 官方源 (downloads.openwrt.org)"
+    echo "2. 清华大学源 (mirrors.tuna.tsinghua.edu.cn)"
+    echo "3. 中国科学技术大学源 (mirrors.ustc.edu.cn)"
+    echo "4. 上海交通大学源 (mirror.sjtu.edu.cn)"
+    echo "5. 返回主菜单"
+    echo
+    read -p "请选择操作 [1-5]: " choice
+
+    case $choice in
+        1)
+            SOURCE_URL="downloads.openwrt.org"
+            ;;
+        2)
+            SOURCE_URL="mirrors.tuna.tsinghua.edu.cn/openwrt"
+            ;;
+        3)
+            SOURCE_URL="mirrors.ustc.edu.cn/openwrt"
+            ;;
+        4)
+            SOURCE_URL="mirror.sjtu.edu.cn/openwrt"
+            ;;
+        5)
+            log "取消切换软件源"
+            return
+            ;;
+        *)
+            warn "无效选择，操作已取消"
+            return
+            ;;
+    esac
+
+    log "正在备份原始的 distfeeds.conf 文件..."
+    cp /etc/opkg/distfeeds.conf /etc/opkg/distfeeds.conf.bak
+    log "备份完成：/etc/opkg/distfeeds.conf.bak"
+
+    log "正在修改 distfeeds.conf 文件..."
+    # 使用sed替换文件中的域名部分
+    sed -i "s|downloads.openwrt.org|$SOURCE_URL|g" /etc/opkg/distfeeds.conf
+
+    if [ $? -eq 0 ]; then
+        log "软件源切换成功！新源为: $SOURCE_URL"
+        log "建议执行 'opkg update' 更新软件包列表。"
+    else
+        error "软件源切换失败，请手动检查 /etc/opkg/distfeeds.conf 文件。"
+        # 恢复备份
+        cp /etc/opkg/distfeeds.conf.bak /etc/opkg/distfeeds.conf
+        error "已从备份文件恢复 distfeeds.conf。"
+    fi
+}
+
 # 等待按键
 wait_key() {
     echo
@@ -710,6 +768,7 @@ main() {
             10) nslookup_tool ;;
             11) install_dependencies ;;
                     12) reboot_system ;;
+             13) switch_opkg_source ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
