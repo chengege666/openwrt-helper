@@ -63,8 +63,8 @@ show_menu() {
     echo -e "  ${CYAN}9. 重启网络服务${NC}"
     echo -e "  ${CYAN}10. 域名解析 (nslookup)${NC}"
     echo -e "  ${CYAN}11. 一键安装所有依赖${NC}"
-    echo -e "  ${CYAN}12. 查看已安装的依赖${NC}"
-    echo -e "  ${RED}13. 重启系统${NC}"
+    
+    echo -e "  ${RED}12. 重启系统${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -709,8 +709,7 @@ main() {
             9) restart_network ;;
             10) nslookup_tool ;;
             11) install_dependencies ;;
-            12) view_installed_dependencies ;;
-            13) reboot_system ;;
+                    12) reboot_system ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
