@@ -708,7 +708,7 @@ main() {
             9) restart_network ;;
             10) nslookup_tool ;;
             11) install_dependencies ;;
-                    12) reboot_system ;;
+            12) reboot_system ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
