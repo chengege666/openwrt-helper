@@ -63,7 +63,6 @@ show_menu() {
     echo -e "  ${CYAN}9. 重启网络服务${NC}"
     echo -e "  ${CYAN}10. 域名解析 (nslookup)${NC}"
     echo -e "  ${CYAN}11. 一键安装所有依赖${NC}"
-    
     echo -e "  ${RED}12. 重启系统${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
