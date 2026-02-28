@@ -62,8 +62,11 @@ show_menu() {
     echo -e "  ${CYAN}8. 系统日志查看${NC}"
     echo -e "  ${CYAN}9. 重启网络服务${NC}"
     echo -e "  ${CYAN}10. 域名解析 (nslookup)${NC}"
-    echo -e "  ${CYAN}11. 一键安装所有依赖${NC}"
-    echo -e "  ${RED}12. 重启系统${NC}"
+    echo -e "  ${CYAN}11. DNS 解析速度对比${NC}"
+    echo -e "  ${CYAN}12. 网络速度测试${NC}"
+    echo -e "  ${CYAN}13. 插件管理${NC}"
+    echo -e "  ${CYAN}14. 一键安装所有依赖${NC}"
+    echo -e "  ${RED}15. 重启系统${NC}"
     echo -e "  ${GREEN}0. 退出脚本${NC}"
     echo
     echo -e "${BLUE}=================================================${NC}"
@@ -236,17 +239,124 @@ disk_check() {
 speed_test() {
     log "网络速度测试"
     echo
-    echo -e "${YELLOW}注意: 测试会消耗少量流量${NC}"
+    echo -e "${YELLOW}注意：测试会消耗一定流量，请谨慎使用${NC}"
     echo
-    echo -e "${CYAN}=== Ping 测试 ===${NC}"
-    ping -c 3 8.8.8.8
+    
+    echo -e "${WHITE}请选择测试模式：${NC}"
+    echo "1. 快速测试（约 5MB 流量）"
+    echo "2. 标准测试（约 20MB 流量）"
+    echo "3. 详细测试（约 50MB 流量）"
+    echo "4. 自定义 URL 测试"
+    echo "5. 返回主菜单"
     echo
-    echo -e "${CYAN}=== 下载测试 ===${NC}"
-    if command -v wget >/dev/null 2>&1; then
-        time wget -O /dev/null http://cachefly.cachefly.net/10mb.test 2>&1 | grep -i "speed"
-    else
-        warn "wget不可用，跳过下载测试"
+    read -p "请选择 [1-5]: " mode_choice
+    
+    case $mode_choice in
+        1)
+            test_url="http://cachefly.cachefly.net/5mb.test"
+            ;;
+        2)
+            test_url="http://cachefly.cachefly.net/20mb.test"
+            ;;
+        3)
+            test_url="http://cachefly.cachefly.net/50mb.test"
+            ;;
+        4)
+            read -p "请输入测试文件 URL: " test_url
+            if [ -z "$test_url" ]; then
+                warn "URL 不能为空，使用默认测试地址"
+                test_url="http://cachefly.cachefly.net/10mb.test"
+            fi
+            ;;
+        5)
+            return
+            ;;
+        *)
+            warn "无效选择，使用默认测试地址"
+            test_url="http://cachefly.cachefly.net/10mb.test"
+            ;;
+    esac
+    
+    echo
+    echo -e "${CYAN}=== 网络速度测试 ===${NC}"
+    echo
+    echo -e "测试地址：$test_url"
+    echo
+    
+    # 检查必要工具
+    if ! command -v wget >/dev/null 2>&1; then
+        error "wget 命令不可用，请先安装 wget"
+        return
     fi
+    
+    # Ping 延迟测试
+    echo -e "${CYAN}=== Ping 延迟测试 ===${NC}"
+    echo "测试到以下服务器的延迟："
+    echo
+    
+    # 常用 DNS 服务器延迟
+    for host in 114.114.114.114 223.5.5.5 8.8.8.8 1.1.1.1; do
+        if ping -c 2 -W 1 "$host" >/dev/null 2>&1; then
+            avg_time=$(ping -c 2 -W 1 "$host" 2>&1 | grep -oP 'time=\K[0-9.]+(?= ms)' | awk '{sum+=$1} END {print sum/NR}')
+            if [ -n "$avg_time" ]; then
+                if [ "${avg_time%.*}" -lt 50 ]; then
+                    color="${GREEN}"
+                elif [ "${avg_time%.*}" -lt 100 ]; then
+                    color="${CYAN}"
+                elif [ "${avg_time%.*}" -lt 200 ]; then
+                    color="${YELLOW}"
+                else
+                    color="${RED}"
+                fi
+                printf "%-15s ${color}%8.2f ms${NC}\n" "$host" "$avg_time"
+            fi
+        else
+            printf "%-15s ${RED}超时${NC}\n" "$host"
+        fi
+    done
+    echo
+    
+    # 下载速度测试
+    echo -e "${CYAN}=== 下载速度测试 ===${NC}"
+    echo "开始下载测试..."
+    echo
+    
+    # 创建临时文件
+    TEMP_FILE="/tmp/speedtest_$$"
+    
+    # 使用 wget 测试，显示详细进度
+    if wget --version | grep -q "progress"; then
+        # 支持 progress 参数
+        wget -O "$TEMP_FILE" --progress=bar:force "$test_url" 2>&1 | tail -5
+    else
+        # 不支持 progress 参数，使用简单模式
+        wget -O "$TEMP_FILE" "$test_url" 2>&1 | tail -10
+    fi
+    
+    # 计算结果
+    if [ -f "$TEMP_FILE" ]; then
+        file_size=$(ls -l "$TEMP_FILE" 2>/dev/null | awk '{print $5}')
+        if [ -n "$file_size" ] && [ "$file_size" -gt 0 ]; then
+            # 获取 wget 输出的速度信息
+            speed_info=$(wget -O "$TEMP_FILE" "$test_url" 2>&1 | grep -oP '\([0-9.]+ [KMG]?B/s\)' | tail -1)
+            
+            # 转换文件大小为 MB
+            size_mb=$((file_size / 1024 / 1024))
+            
+            echo
+            echo -e "${CYAN}=== 测试结果 ===${NC}"
+            echo "下载大小：${size_mb} MB"
+            if [ -n "$speed_info" ]; then
+                echo "平均速度：$speed_info"
+            fi
+        fi
+    fi
+    
+    # 清理临时文件
+    rm -f "$TEMP_FILE"
+    
+    echo
+    echo -e "${YELLOW}提示：测试结果受服务器带宽、网络拥塞等因素影响${NC}"
 }
 
 # 系统服务管理
@@ -335,6 +445,362 @@ backup_config() {
     fi
 }
 
+
+# 插件系统配置
+PLUGIN_DIR="/usr/lib/openwrt-helper/plugins"
+PLUGIN_ENABLED_DIR="/usr/lib/openwrt-helper/enabled"
+
+# 初始化插件目录
+init_plugins() {
+    if [ ! -d "$PLUGIN_DIR" ]; then
+        mkdir -p "$PLUGIN_DIR" 2>/dev/null
+        log "已创建插件目录：$PLUGIN_DIR"
+    fi
+    if [ ! -d "$PLUGIN_ENABLED_DIR" ]; then
+        mkdir -p "$PLUGIN_ENABLED_DIR" 2>/dev/null
+        log "已创建启用插件目录：$PLUGIN_ENABLED_DIR"
+    fi
+}
+
+# 加载单个插件
+load_plugin() {
+    local plugin_file="$1"
+    if [ -f "$plugin_file" ] && [ -r "$plugin_file" ]; then
+        # 检查插件元数据
+        if grep -q "# PLUGIN_NAME" "$plugin_file" 2>/dev/null; then
+            # 执行插件初始化（如果有）
+            if grep -q "plugin_init" "$plugin_file" 2>/dev/null; then
+                source "$plugin_file"
+                if type plugin_init >/dev/null 2>&1; then
+                    plugin_init 2>/dev/null || true
+                fi
+            fi
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# 加载所有启用的插件
+load_all_plugins() {
+    log "正在加载插件..."
+    local count=0
+    
+    # 从启用目录加载插件
+    if [ -d "$PLUGIN_ENABLED_DIR" ]; then
+        for plugin in "$PLUGIN_ENABLED_DIR"/*.sh; do
+            if [ -f "$plugin" ]; then
+                if load_plugin "$plugin"; then
+                    plugin_name=$(grep "# PLUGIN_NAME" "$plugin" | cut -d'"' -f2)
+                    if [ -n "$plugin_name" ]; then
+                        log "已加载插件：$plugin_name"
+                        count=$((count + 1))
+                    fi
+                fi
+            fi
+        done
+    fi
+    
+    if [ $count -gt 0 ]; then
+        log "共加载 $count 个插件"
+    else
+        log "未加载任何插件"
+    fi
+}
+
+# 显示插件菜单
+plugin_menu() {
+    echo
+    echo -e "${CYAN}=== 插件管理 ===${NC}"
+    echo "1. 查看已安装插件"
+    echo "2. 安装插件"
+    echo "3. 卸载插件"
+    echo "4. 启用/禁用插件"
+    echo "5. 运行插件"
+    echo "6. 返回主菜单"
+    echo
+    read -p "请选择操作 [1-6]: " choice
+    
+    case $choice in
+        1) list_plugins ;;
+        2) install_plugin ;;
+        3) uninstall_plugin ;;
+        4) toggle_plugin ;;
+        5) run_plugin ;;
+        6) return ;;
+        *) warn "无效选择" ;;
+    esac
+}
+
+# 列出已安装的插件
+list_plugins() {
+    echo
+    echo -e "${CYAN}=== 已安装的插件 ===${NC}"
+    echo
+    
+    if [ ! -d "$PLUGIN_DIR" ] || [ -z "$(ls -A "$PLUGIN_DIR" 2>/dev/null)" ]; then
+        echo "未安装任何插件"
+        echo
+        echo -e "${YELLOW}提示：可将插件脚本放入 $PLUGIN_DIR 目录${NC}"
+        return
+    fi
+    
+    local count=0
+    for plugin in "$PLUGIN_DIR"/*.sh; do
+        if [ -f "$plugin" ]; then
+            plugin_name=$(grep "# PLUGIN_NAME" "$plugin" | cut -d'"' -f2)
+            plugin_version=$(grep "# PLUGIN_VERSION" "$plugin" | cut -d'"' -f2)
+            plugin_desc=$(grep "# PLUGIN_DESC" "$plugin" | cut -d'"' -f2)
+            plugin_author=$(grep "# PLUGIN_AUTHOR" "$plugin" | cut -d'"' -f2)
+            
+            if [ -n "$plugin_name" ]; then
+                count=$((count + 1))
+                echo -e "${GREEN}[$count]${NC} $plugin_name"
+                echo "    版本：${plugin_version:-未知}"
+                echo "    描述：${plugin_desc:-无}"
+                echo "    作者：${plugin_author:-未知}"
+                
+                # 检查是否启用
+                if [ -f "$PLUGIN_ENABLED_DIR/$(basename "$plugin")" ]; then
+                    echo -e "    状态：${GREEN}已启用${NC}"
+                else
+                    echo -e "    状态：${YELLOW}未启用${NC}"
+                fi
+                echo
+            fi
+        fi
+    done
+    
+    if [ $count -eq 0 ]; then
+        echo "未找到有效的插件"
+    fi
+}
+
+# 安装插件
+install_plugin() {
+    echo
+    echo -e "${CYAN}=== 安装插件 ===${NC}"
+    echo
+    echo -e "${YELLOW}支持以下安装方式：${NC}"
+    echo "1. 从 URL 下载"
+    echo "2. 从本地文件导入"
+    echo "3. 返回"
+    echo
+    read -p "请选择 [1-3]: " install_method
+    
+    case $install_method in
+        1)
+            read -p "请输入插件 URL: " plugin_url
+            if [ -z "$plugin_url" ]; then
+                warn "URL 不能为空"
+                return
+            fi
+            
+            plugin_name=$(basename "$plugin_url" .sh)
+            if command -v wget >/dev/null 2>&1; then
+                log "正在下载插件：$plugin_name"
+                if wget -O "$PLUGIN_DIR/$plugin_name.sh" "$plugin_url" 2>/dev/null; then
+                    chmod +x "$PLUGIN_DIR/$plugin_name.sh"
+                    log "插件安装成功：$plugin_name"
+                    
+                    # 询问是否立即启用
+                    read -p "是否立即启用此插件？(y/N): " enable_choice
+                    if [ "$enable_choice" = "y" ] || [ "$enable_choice" = "Y" ]; then
+                        ln -sf "$PLUGIN_DIR/$plugin_name.sh" "$PLUGIN_ENABLED_DIR/$plugin_name.sh"
+                        log "插件已启用"
+                        load_plugin "$PLUGIN_DIR/$plugin_name.sh"
+                    fi
+                else
+                    error "下载失败"
+                    rm -f "$PLUGIN_DIR/$plugin_name.sh"
+                fi
+            else
+                error "wget 命令不可用"
+            fi
+            ;;
+        2)
+            read -p "请输入本地插件文件路径：" local_path
+            if [ -f "$local_path" ]; then
+                plugin_name=$(basename "$local_path" .sh)
+                cp "$local_path" "$PLUGIN_DIR/$plugin_name.sh"
+                chmod +x "$PLUGIN_DIR/$plugin_name.sh"
+                log "插件安装成功：$plugin_name"
+                
+                read -p "是否立即启用此插件？(y/N): " enable_choice
+                if [ "$enable_choice" = "y" ] || [ "$enable_choice" = "Y" ]; then
+                    ln -sf "$PLUGIN_DIR/$plugin_name.sh" "$PLUGIN_ENABLED_DIR/$plugin_name.sh"
+                    log "插件已启用"
+                    load_plugin "$PLUGIN_DIR/$plugin_name.sh"
+                fi
+            else
+                error "文件不存在：$local_path"
+            fi
+            ;;
+        3)
+            return
+            ;;
+        *)
+            warn "无效选择"
+            ;;
+    esac
+}
+
+# 卸载插件
+uninstall_plugin() {
+    echo
+    echo -e "${CYAN}=== 卸载插件 ===${NC}"
+    echo
+    
+    if [ ! -d "$PLUGIN_DIR" ] || [ -z "$(ls -A "$PLUGIN_DIR" 2>/dev/null)" ]; then
+        echo "未安装任何插件"
+        return
+    fi
+    
+    list_plugins
+    echo
+    read -p "请输入要卸载的插件编号： " plugin_num
+    
+    if [ -n "$plugin_num" ] && [ "$plugin_num" -gt 0 ]; then
+        local count=0
+        for plugin in "$PLUGIN_DIR"/*.sh; do
+            if [ -f "$plugin" ]; then
+                plugin_name=$(grep "# PLUGIN_NAME" "$plugin" | cut -d'"' -f2)
+                if [ -n "$plugin_name" ]; then
+                    count=$((count + 1))
+                    if [ "$count" -eq "$plugin_num" ]; then
+                        # 询问确认
+                        read -p "确定要卸载插件 '$plugin_name' 吗？(y/N): " confirm
+                        if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+                            # 删除启用链接
+                            rm -f "$PLUGIN_ENABLED_DIR/$(basename "$plugin")"
+                            # 删除插件文件
+                            rm -f "$plugin"
+                            log "插件 '$plugin_name' 已卸载"
+                        else
+                            log "取消卸载"
+                        fi
+                        return
+                    fi
+                fi
+            fi
+        done
+        error "无效的插件编号"
+    else
+        error "无效的输入"
+    fi
+}
+
+# 启用/禁用插件
+toggle_plugin() {
+    echo
+    echo -e "${CYAN}=== 启用/禁用插件 ===${NC}"
+    echo
+    
+    if [ ! -d "$PLUGIN_DIR" ] || [ -z "$(ls -A "$PLUGIN_DIR" 2>/dev/null)" ]; then
+        echo "未安装任何插件"
+        return
+    fi
+    
+    list_plugins
+    echo
+    read -p "请输入要操作的插件编号： " plugin_num
+    
+    if [ -n "$plugin_num" ] && [ "$plugin_num" -gt 0 ]; then
+        local count=0
+        for plugin in "$PLUGIN_DIR"/*.sh; do
+            if [ -f "$plugin" ]; then
+                plugin_name=$(grep "# PLUGIN_NAME" "$plugin" | cut -d'"' -f2)
+                if [ -n "$plugin_name" ]; then
+                    count=$((count + 1))
+                    if [ "$count" -eq "$plugin_num" ]; then
+                        plugin_basename=$(basename "$plugin")
+                        
+                        # 检查当前状态
+                        if [ -f "$PLUGIN_ENABLED_DIR/$plugin_basename" ]; then
+                            # 已启用，询问是否禁用
+                            read -p "插件 '$plugin_name' 已启用，是否禁用？(y/N): " confirm
+                            if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+                                rm -f "$PLUGIN_ENABLED_DIR/$plugin_basename"
+                                log "插件 '$plugin_name' 已禁用"
+                            fi
+                        else
+                            # 未启用，询问是否启用
+                            read -p "插件 '$plugin_name' 未启用，是否启用？(y/N): " confirm
+                            if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+                                ln -sf "$plugin" "$PLUGIN_ENABLED_DIR/$plugin_basename"
+                                log "插件 '$plugin_name' 已启用"
+                                load_plugin "$plugin"
+                            fi
+                        fi
+                        return
+                    fi
+                fi
+            fi
+        done
+        error "无效的插件编号"
+    else
+        error "无效的输入"
+    fi
+}
+
+# 运行插件
+run_plugin() {
+    echo
+    echo -e "${CYAN}=== 运行插件 ===${NC}"
+    echo
+    
+    if [ ! -d "$PLUGIN_DIR" ] || [ -z "$(ls -A "$PLUGIN_DIR" 2>/dev/null)" ]; then
+        echo "未安装任何插件"
+        return
+    fi
+    
+    list_plugins
+    echo
+    read -p "请输入要运行的插件编号： " plugin_num
+    
+    if [ -n "$plugin_num" ] && [ "$plugin_num" -gt 0 ]; then
+        local count=0
+        for plugin in "$PLUGIN_DIR"/*.sh; do
+            if [ -f "$plugin" ]; then
+                plugin_name=$(grep "# PLUGIN_NAME" "$plugin" | cut -d'"' -f2)
+                if [ -n "$plugin_name" ]; then
+                    count=$((count + 1))
+                    if [ "$count" -eq "$plugin_num" ]; then
+                        # 检查是否启用
+                        if [ ! -f "$PLUGIN_ENABLED_DIR/$(basename "$plugin")" ]; then
+                            warn "插件未启用，是否先启用？(y/N): " enable_choice
+                            if [ "$enable_choice" = "y" ] || [ "$enable_choice" = "Y" ]; then
+                                ln -sf "$plugin" "$PLUGIN_ENABLED_DIR/$(basename "$plugin")"
+                                load_plugin "$plugin"
+                            else
+                                return
+                            fi
+                        fi
+                        
+                        # 运行插件主函数
+                        if type plugin_main >/dev/null 2>&1; then
+                            plugin_main
+                        else
+                            # 尝试直接执行
+                            source "$plugin"
+                            if type plugin_main >/dev/null 2>&1; then
+                                plugin_main
+                            else
+                                warn "插件没有定义 plugin_main 函数，尝试直接执行..."
+                                bash "$plugin"
+                            fi
+                        fi
+                        return
+                    fi
+                fi
+            fi
+        done
+        error "无效的插件编号"
+    else
+        error "无效的输入"
+    fi
+}
+
 # 高级工具
 advanced_tools() {
     echo
@@ -373,7 +839,7 @@ advanced_tools() {
 nslookup_tool() {
     log "域名解析工具 (nslookup)"
     echo
-    read -p "请输入要查询的域名 (例如: baidu.com): " domain
+    read -p "请输入要查询的域名 (例如：baidu.com): " domain
     if [ -z "$domain" ]; then
         warn "域名不能为空"
         return
@@ -382,8 +848,123 @@ nslookup_tool() {
     if command -v nslookup >/dev/null 2>&1; then
         nslookup "$domain"
     else
-        error "nslookup命令不可用，请尝试安装 bind-host 或 dnsutils 软件包"
+        error "nslookup 命令不可用，请尝试安装 bind-host 或 dnsutils 软件包"
     fi
+}
+
+# DNS 解析速度对比测试
+dns_speed_test() {
+    log "DNS 解析速度对比测试"
+    echo
+    echo -e "${CYAN}=== DNS 服务器解析速度对比 ===${NC}"
+    echo
+    echo -e "${YELLOW}提示：测试将使用不同 DNS 服务器解析常用域名，耗时越短越好${NC}"
+    echo
+    
+    read -p "请输入要测试的域名 (默认：www.baidu.com): " test_domain
+    test_domain=${test_domain:-www.baidu.com}
+    
+    if [ -z "$test_domain" ]; then
+        warn "域名不能为空"
+        return
+    fi
+    
+    echo
+    echo -e "${CYAN}测试域名：$test_domain${NC}"
+    echo
+    
+    # 定义常用 DNS 服务器
+    DNS_SERVERS="114.114.114.114 114.114.115.115 223.5.5.5 223.6.6.6 180.76.76.76 1.1.1.1 8.8.8.8 8.8.4.4 9.9.9.9 208.67.222.222"
+    
+    echo -e "${WHITE}开始测试...${NC}"
+    echo
+    
+    # 创建临时文件存储结果
+    RESULTS_FILE="/tmp/dns_speed_test_$$"
+    > "$RESULTS_FILE"
+    
+    # 检查 dig 或 nslookup 是否可用
+    if command -v dig >/dev/null 2>&1; then
+        USE_DIG=1
+    elif command -v nslookup >/dev/null 2>&1; then
+        USE_DIG=0
+    else
+        error "dig 和 nslookup 命令都不可用，请安装 bind-host 或 dnsutils"
+        rm -f "$RESULTS_FILE"
+        return
+    fi
+    
+    # 测试每个 DNS 服务器
+    for dns in $DNS_SERVERS; do
+        echo -ne "测试 $dns ... "
+        
+        if [ "$USE_DIG" -eq 1 ]; then
+            # 使用 dig 测试
+            start_time=$(date +%s)
+            result=$(dig @"$dns" "$test_domain" +short +time=3 +tries=2 2>/dev/null | head -1)
+            end_time=$(date +%s)
+        else
+            # 使用 nslookup 测试
+            start_time=$(date +%s)
+            result=$(nslookup "$test_domain" "$dns" 2>/dev/null | grep -A1 "Name:" | grep "Address:" | head -1 | awk '{print $2}')
+            end_time=$(date +%s)
+        fi
+        
+        # 计算耗时（秒转毫秒）
+        elapsed=$(( (end_time - start_time) * 1000 ))
+        
+        if [ -n "$result" ]; then
+            echo -e "${GREEN}${elapsed}ms${NC} - $result"
+            echo "$elapsed|$dns|$result" >> "$RESULTS_FILE"
+        else
+            echo -e "${RED}超时/失败${NC}"
+            echo "9999|$dns|失败" >> "$RESULTS_FILE"
+        fi
+    done
+    
+    echo
+    echo -e "${CYAN}=== 测试结果排序（从快到慢）===${NC}"
+    echo
+    
+    # 排序并显示结果
+    if [ -f "$RESULTS_FILE" ]; then
+        echo -e "${WHITE}DNS 服务器\t\t\t响应时间\t解析结果${NC}"
+        echo "------------------------------------------------------------"
+        
+        sort -t'|' -k1 -n "$RESULTS_FILE" | head -10 | while IFS='|' read -r time dns result; do
+            if [ "$time" -lt 100 ]; then
+                color="${GREEN}"
+            elif [ "$time" -lt 300 ]; then
+                color="${CYAN}"
+            elif [ "$time" -lt 500 ]; then
+                color="${YELLOW}"
+            else
+                color="${RED}"
+            fi
+            
+            if [ "$time" -eq 9999 ]; then
+                echo -e "$dns\t${color}超时${NC}\t\t$result"
+            else
+                echo -e "$dns\t${color}${time}ms${NC}\t\t$result"
+            fi
+        done
+        
+        echo
+        
+        # 推荐最佳 DNS
+        best_line=$(sort -t'|' -k1 -n "$RESULTS_FILE" | head -1)
+        best_dns=$(echo "$best_line" | cut -d'|' -f2)
+        best_time=$(echo "$best_line" | cut -d'|' -f1)
+        
+        if [ "$best_time" -ne 9999 ]; then
+            echo -e "${GREEN}✓ 推荐 DNS: $best_dns (${best_time}ms)${NC}"
+            echo
+            echo -e "${YELLOW}提示：可在网络配置中设置此 DNS 以获得更快的解析速度${NC}"
+        fi
+    fi
+    
+    rm -f "$RESULTS_FILE"
+    echo
 }
 
 # 更新脚本
@@ -690,10 +1271,12 @@ wait_key() {
 # 主函数
 main() {
     check_system
+    init_plugins
+    load_all_plugins
     
     while true; do
         show_menu
-        echo -n -e "${WHITE}请选择操作 [0-13]: ${NC}"
+        echo -n -e "${WHITE}请选择操作 [0-15]: ${NC}"
         read choice
         
         case $choice in
@@ -707,8 +1290,11 @@ main() {
             8) log_view ;;
             9) restart_network ;;
             10) nslookup_tool ;;
-            11) install_dependencies ;;
-            12) reboot_system ;;
+            11) dns_speed_test ;;
+            12) speed_test ;;
+            13) plugin_menu ;;
+            14) install_dependencies ;;
+            15) reboot_system ;;
             0) 
                 log "感谢使用，再见！"
                 exit 0 
